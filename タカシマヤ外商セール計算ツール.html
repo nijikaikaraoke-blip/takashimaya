@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タカシマヤ外商セール計算ツール</title>
+  <style>
+    :root {
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .container {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 480px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 24px;
+      text-align: center;
+      color: #1e293b;
+      letter-spacing: -0.025em;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label.section-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #475569;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.2s ease;
+      background-color: #fff;
+      color: var(--text-main);
+    }
+
+    input[type="number"]:focus, select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .unit {
+      position: absolute;
+      right: 16px;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .radio-group-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .radio-btn {
+      text-align: center;
+    }
+
+    .radio-btn.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .radio-btn input {
+      display: none;
+    }
+
+    .radio-btn span {
+      display: block;
+      padding: 12px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #475569;
+      background-color: #f8fafc;
+    }
+
+    .radio-btn input:checked + span {
+      background-color: var(--primary-color);
+      color: #ffffff;
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .results {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 2px dashed var(--border-color);
+    }
+
+    /* 元の税抜き金額の強調スタイル */
+    .result-row-base {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 1.15rem;
+      font-weight: bold;
+      color: #1e293b;
+      background-color: #f1f5f9;
+      padding: 16px;
+      border-radius: 12px;
+      border-left: 4px solid #94a3b8;
+    }
+
+    /* 割引額を極大化するための特別スタイル */
+    .result-row-mega {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 2px solid #bfdbfe;
+      padding: 36px 16px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.15);
+    }
+
+    .result-row-mega .result-label {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 6px;
+    }
+
+    .result-row-mega .result-label-sub {
+      font-size: 0.85rem;
+      color: #3b82f6;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    .result-row-mega .result-value {
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: #1d4ed8;
+      line-height: 1;
+      text-shadow: 2px 2px 0 rgba(255,255,255,0.7);
+      font-feature-settings: "pnum";
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>タカシマヤ外商セール計算ツール</h1>
+
+  <!-- 1. 税込金額入力 -->
+  <div class="form-group">
+    <label class="section-label" for="taxIncPrice">元の税込金額 (税率10%固定)</label>
+    <div class="input-wrapper">
+      <input type="number" id="taxIncPrice" placeholder="例: 11000" min="0" value="11000">
+      <span class="unit">円</span>
+    </div>
+  </div>
+
+  <!-- 2. 割引の種類選択 -->
+  <div class="form-group">
+    <label class="section-label">割引の種類</label>
+    <div class="radio-group-grid">
+      <label class="radio-btn">
+        <input type="radio" name="discountPreset" value="8" checked>
+        <span>現金 (8%オフ)</span>
+      </label>
+      <label class="radio-btn">
+        <input type="radio" name="discountPreset" value="6">
+        <span>タカシマヤカード (6%オフ)</span>
+      </label>
+      <label class="radio-btn full-width">
+        <input type="radio" name="discountPreset" value="manual">
+        <span>自由に指定</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 割引率手入力 (自由に指定選択時のみ表示) -->
+  <div class="form-group" id="manualDiscountWrapper" style="display: none;">
+    <label class="section-label" for="discountRate">割引率を入力</label>
+    <div class="input-wrapper">
+      <input type="number" id="discountRate" placeholder="例: 10" min="0" max="100" value="10" step="0.1">
+      <span class="unit">%</span>
+    </div>
+  </div>
+
+  <!-- 3. 端数処理選択 -->
+  <div class="form-group">
+    <label class="section-label" for="rounding">税抜金額算出時の端数処理</label>
+    <select id="rounding">
+      <option value="floor" selected>切り捨て</option>
+      <option value="round">四捨五入</option>
+      <option value="ceil">切り上げ</option>
+    </select>
+  </div>
+
+  <div class="results">
+    <!-- 出力1: 元の税抜き金額 (太字・やや大きめ) -->
+    <div class="result-row-base">
+      <span>元の税抜き金額 (逆算):</span>
+      <span id="baseExPrice">0 円</span>
+    </div>
+
+    <!-- 出力2: 割引額 (巨大表示) -->
+    <div class="result-row-mega">
+      <span class="result-label">割引額</span>
+      <span class="result-label-sub">※税抜額から計算・100円単位で繰り上げ</span>
+      <span class="result-value" id="discountAmount">0 円</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // DOM要素の取得
+  const taxIncInput = document.getElementById('taxIncPrice');
+  const discountInput = document.getElementById('discountRate');
+  const roundingSelect = document.getElementById('rounding');
+  const discountPresetRadios = document.getElementsByName('discountPreset');
+  const manualDiscountWrapper = document.getElementById('manualDiscountWrapper');
+
+  const baseExPriceEl = document.getElementById('baseExPrice');
+  const discountAmountEl = document.getElementById('discountAmount');
+
+  const TAX_RATE = 0.10; // 消費税率は10%固定
+
+  // 手入力欄の表示/非表示を制御
+  function updateVisibility() {
+    let isManual = false;
+    for (const radio of discountPresetRadios) {
+      if (radio.checked && radio.value === 'manual') {
+        isManual = true;
+        break;
+      }
+    }
+    manualDiscountWrapper.style.display = isManual ? 'block' : 'none';
+  }
+
+  // 現在選択されている割引率を取得
+  function getDiscountRate() {
+    for (const radio of discountPresetRadios) {
+      if (radio.checked) {
+        if (radio.value === 'manual') {
+          return parseFloat(discountInput.value) || 0;
+        } else {
+          return parseFloat(radio.value);
+        }
+      }
+    }
+    return 0;
+  }
+
+  // 指定された端数処理を実行
+  function applyRounding(val, method) {
+    if (method === 'floor') return Math.floor(val);
+    if (method === 'ceil') return Math.ceil(val);
+    return Math.round(val);
+  }
+
+  // メインの計算ロジック
+  function calculate() {
+    const inputIncPrice = parseFloat(taxIncInput.value) || 0;
+    const discountRate = getDiscountRate();
+    const roundingMethod = roundingSelect.value;
+
+    // 1. 入力された税込金額から「元の税抜き金額」を逆算 (指定された端数処理を適用)
+    const rawBaseExPrice = inputIncPrice / (1 + TAX_RATE);
+    const baseExPrice = applyRounding(rawBaseExPrice, roundingMethod);
+
+    // 2. 税抜き金額に対して割引額を計算
+    const rawDiscountAmount = baseExPrice * (discountRate / 100);
+    
+    // 3. 【必ず100円単位で繰り上げ】
+    const discountAmount = Math.ceil(rawDiscountAmount / 100) * 100;
+
+    // 画面の数値を更新 (カンマ区切りで表示)
+    baseExPriceEl.textContent = baseExPrice.toLocaleString() + ' 円';
+    // 割引額が0より大きい場合はマイナス記号をつける
+    const prefix = discountAmount > 0 ? '-' : '';
+    discountAmountEl.textContent = prefix + discountAmount.toLocaleString() + ' 円';
+  }
+
+  // イベントリスナーの登録（リアルタイム計算用）
+  taxIncInput.addEventListener('input', calculate);
+  discountInput.addEventListener('input', calculate);
+  roundingSelect.addEventListener('change', calculate);
+  
+  discountPresetRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      updateVisibility();
+      calculate();
+    });
+  });
+
+  // 初回ロード時にUIを整理して計算を実行
+  updateVisibility();
+  calculate();
+</script>
+
+</body>
+</html>
